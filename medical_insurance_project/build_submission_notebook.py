@@ -281,6 +281,44 @@ display(imp.round(4))
 plt.figure(figsize=(8,5)); sns.barplot(data=imp.head(10), x="importance", y="feature", palette="mako")
 plt.title("Feature importance (Gradient Boosting)"); plt.show()""")
 
+md("""### 5.1 實際預測示範 — 輸入一個人,預估他的年度醫療費用
+
+模型訓練完成後,可直接拿來預測**任何新對象**的保費。下方函式接受一個人的條件
+（年齡、性別、BMI、子女數、是否吸菸、地區）,自動補上工程特徵後輸出預估費用。
+我們也示範「同一個人,吸菸 vs 不吸菸」的保費差異 —— 這就是最重要的訂價洞見。
+
+> 預設使用**線性迴歸**(我們建議上線的可解釋模型);你也可改用 `best_gbr` 比較。
+""")
+code('''def predict_charge(age, sex, bmi, children, smoker, region, model=lin):
+    """輸入一位新對象的條件,回傳預估年度醫療費用(USD)。"""
+    row = pd.DataFrame([{
+        "age": age, "bmi": bmi, "children": children,
+        "age2": age**2,                                   # 工程特徵:年齡平方
+        "obese": int(bmi >= 30),                          # 工程特徵:肥胖旗標
+        "smoker_obese": int(smoker == "yes") * int(bmi >= 30),  # 工程特徵:吸菸×肥胖
+        "sex": sex, "smoker": smoker, "region": region,
+    }])[numeric + categorical]
+    return float(model.predict(row)[0])
+
+# 範例對象
+examples = [
+    dict(age=19, sex="female", bmi=27.9, children=0, smoker="yes", region="southwest"),
+    dict(age=40, sex="male",   bmi=33.0, children=2, smoker="no",  region="southeast"),
+    dict(age=55, sex="male",   bmi=31.5, children=1, smoker="yes", region="northeast"),
+]
+print("=== 個別對象預估年度醫療費用 ===")
+for p in examples:
+    print(f"  {p} -> 預估 ${predict_charge(**p):,.0f}")
+
+# 同一個人:吸菸 vs 不吸菸,保費差多少
+base = dict(age=45, sex="male", bmi=32.0, children=2, region="southeast")
+c_smoke   = predict_charge(**base, smoker="yes")
+c_nosmoke = predict_charge(**base, smoker="no")
+print("\\n=== 訂價洞見:45 歲男性、BMI 32、2 名子女 ===")
+print(f"  吸菸者預估    : ${c_smoke:,.0f}")
+print(f"  不吸菸者預估  : ${c_nosmoke:,.0f}")
+print(f"  吸菸帶來的價差: ${c_smoke - c_nosmoke:,.0f} / 年")''')
+
 md("""### 商業結論與建議
 
 **模型表現（翻成商業語言）**
