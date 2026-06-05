@@ -1,0 +1,4 @@
+model,train_R2,test_R2,test_MAE,test_RMSE,lift_R2_vs_baseline,MAE_reduction_vs_baseline
+Linear Regression,0.8522,0.9059,2393.8906,4158.2992,0.0,0.0
+Gradient Boosting,0.8688,0.9023,2450.9224,4237.332,-0.0036,-57.0317
+Random Forest,0.8771,0.9024,2370.2742,4234.5427,-0.0035,23.6165

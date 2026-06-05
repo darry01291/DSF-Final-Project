@@ -1,0 +1,164 @@
+MEDICAL INSURANCE CHARGE PREDICTION — RESULTS LOG
+Random seed: 42
+
+======================================================================
+STAGE 1 — PROBLEM DEFINITION & EDA
+======================================================================
+
+Business question:
+  Predict an individual's annual medical insurance CHARGES from
+  demographic & health attributes, so the insurer can price
+  premiums fairly and flag high-cost members for care management.
+
+Prediction type: SUPERVISED REGRESSION (continuous target = charges)
+
+Shape: 2772 rows x 7 columns
+
+Column types:
+age           int64
+sex             str
+bmi         float64
+children      int64
+smoker          str
+region          str
+charges     float64
+
+Missing values:
+age         0
+sex         0
+bmi         0
+children    0
+smoker      0
+region      0
+charges     0
+
+Exact duplicate rows: 1435  (unique rows = 1337)
+
+Numeric summary:
+           age      bmi  children   charges
+count  2772.00  2772.00   2772.00   2772.00
+mean     39.11    30.70      1.10  13261.37
+std      14.08     6.13      1.21  12151.77
+min      18.00    15.96      0.00   1121.87
+25%      26.00    26.22      0.00   4687.80
+50%      39.00    30.45      1.00   9333.01
+75%      51.00    34.77      2.00  16577.78
+max      64.00    53.13      5.00  63770.43
+
+Target (charges) distribution:
+  mean   = 13,261
+  median = 9,333
+  skew   = 1.511  -> right-skewed / heavy tail
+  log-skew = -0.089  -> ~symmetric after log
+
+Charges by smoker status:
+        count     mean   median
+smoker                         
+no       2208   8418.0   7341.0
+yes       564  32223.0  34726.0
+  [figure] fig01_target_distribution.png
+  [figure] fig02_correlation_matrix.png
+
+Correlation with charges (sorted):
+smoker_bin    0.789
+age           0.299
+bmi           0.200
+children      0.066
+sex_bin       0.063
+  [figure] fig03_charges_vs_age_smoker.png
+  [figure] fig04_charges_vs_bmi_smoker.png
+  [figure] fig05_categorical_boxplots.png
+
+======================================================================
+STAGE 2 — DATA PREPROCESSING & FEATURE ENGINEERING
+======================================================================
+
+Dropped exact duplicates: 2772 -> 1337 rows.
+  Rationale: the file is the 1,338-row Kaggle set duplicated ~2x.
+  Keeping duplicates would leak identical rows across train/test
+  and inflate test scores. De-dup BEFORE splitting is essential.
+
+Engineered features:
+  - smoker_obese : interaction; isolates the highest-cost segment
+  - age2         : captures non-linear (accelerating) age effect
+  - obese        : clinical BMI>=30 flag
+
+  Mean charges by (smoker_obese):
+smoker_obese
+0     9839.0
+1    41558.0
+
+Split: train=1069  test=268  (80/20, random)
+  No time/index ordering -> random split is appropriate;
+  stratification not needed for continuous target.
+
+Preprocessing: StandardScaler(numeric) + OneHot(drop-first, categorical)
+  Scaling justified for Linear Regression (coef comparability);
+  harmless for trees. One-hot: low-cardinality nominal features.
+
+======================================================================
+STAGE 3 & 4 — MODEL SELECTION, TUNING & EVALUATION
+======================================================================
+
+[Baseline] Linear Regression
+  Why: interpretable, fast benchmark; charges are roughly linear
+  in age and shift sharply by smoker -> linear+interaction = strong start.
+  5-fold CV R2 = 0.8471 +/- 0.0215
+
+  Linear Regression
+    train R2 = 0.8522
+    test  R2 = 0.9059
+    test  MAE  = 2,394 USD
+    test  RMSE = 4,158 USD
+
+[Advanced] Gradient Boosting Regressor (GridSearchCV)
+  Why: charges have heavy tails, threshold effects (BMI>=30) and
+  interactions (smoker x bmi). Boosted trees model non-linear
+  interactions automatically and are robust to feature scaling/outliers.
+  Best params: {'model__learning_rate': 0.05, 'model__max_depth': 2, 'model__n_estimators': 200, 'model__subsample': 1.0}
+  Best CV R2 = 0.8450
+
+  Gradient Boosting
+    train R2 = 0.8688
+    test  R2 = 0.9023
+    test  MAE  = 2,451 USD
+    test  RMSE = 4,237 USD
+
+[Reference] Random Forest Regressor (GridSearchCV)
+  Best params: {'model__max_depth': 6, 'model__min_samples_leaf': 3, 'model__n_estimators': 300}
+
+  Random Forest
+    train R2 = 0.8771
+    test  R2 = 0.9024
+    test  MAE  = 2,370 USD
+    test  RMSE = 4,235 USD
+
+Model comparison:
+            model  train_R2  test_R2  test_MAE  test_RMSE  lift_R2_vs_baseline  MAE_reduction_vs_baseline
+Linear Regression     0.852    0.906  2393.891   4158.299                0.000                      0.000
+Gradient Boosting     0.869    0.902  2450.922   4237.332               -0.004                    -57.032
+    Random Forest     0.877    0.902  2370.274   4234.543               -0.003                     23.616
+  [figure] fig06_model_comparison.png
+  [figure] fig07_pred_vs_actual.png
+  [figure] fig08_residuals.png
+
+======================================================================
+STAGE 5 — RESULT INTERPRETATION (feature importance)
+======================================================================
+
+Gradient Boosting feature importance:
+         feature  importance
+    smoker_obese      0.4094
+      smoker_yes      0.3878
+            age2      0.0707
+             bmi      0.0691
+             age      0.0513
+        children      0.0106
+region_southwest      0.0007
+        sex_male      0.0003
+region_southeast      0.0001
+region_northwest      0.0000
+           obese      0.0000
+  [figure] fig09_feature_importance.png
+
+DONE. All artefacts written to ./results

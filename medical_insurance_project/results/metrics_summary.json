@@ -1,0 +1,55 @@
+{
+  "n_unique_rows": 1337,
+  "best_model": "Linear Regression",
+  "results": [
+    {
+      "model": "Linear Regression",
+      "train_R2": 0.8522,
+      "test_R2": 0.9059,
+      "test_MAE": 2393.8906,
+      "test_RMSE": 4158.2992,
+      "lift_R2_vs_baseline": 0.0,
+      "MAE_reduction_vs_baseline": 0.0
+    },
+    {
+      "model": "Gradient Boosting",
+      "train_R2": 0.8688,
+      "test_R2": 0.9023,
+      "test_MAE": 2450.9224,
+      "test_RMSE": 4237.332,
+      "lift_R2_vs_baseline": -0.0036,
+      "MAE_reduction_vs_baseline": -57.0317
+    },
+    {
+      "model": "Random Forest",
+      "train_R2": 0.8771,
+      "test_R2": 0.9024,
+      "test_MAE": 2370.2742,
+      "test_RMSE": 4234.5427,
+      "lift_R2_vs_baseline": -0.0035,
+      "MAE_reduction_vs_baseline": 23.6165
+    }
+  ],
+  "top_features": [
+    {
+      "feature": "smoker_obese",
+      "importance": 0.40935354524428297
+    },
+    {
+      "feature": "smoker_yes",
+      "importance": 0.3877629756524019
+    },
+    {
+      "feature": "age2",
+      "importance": 0.07070636536812956
+    },
+    {
+      "feature": "bmi",
+      "importance": 0.06907959021826186
+    },
+    {
+      "feature": "age",
+      "importance": 0.05131878337553371
+    }
+  ]
+}
