@@ -72,6 +72,29 @@ md("""**EDA 觀察重點**
 - `charges` 明顯**右偏**（偏度 ≈ 1.5），取對數後接近對稱。
 """)
 
+md("""### 1.1 重複結構分析（為去重決策佐證）
+
+EDA 發現 2,772 列去重後只剩 1,337 列。為了佐證「這是被複製的資料、必須去重」,
+而非偶然出現相同的人,進行以下分析:
+
+1. **每個唯一列出現幾次** —— 若是程式複製,會呈現整齊的倍數(各 2 份、4 份)。
+2. **連續變數是否完全相同** —— `charges` 精確到小數點下 5 位,兩個不同的人費用全等的機率近乎 0。
+""")
+code("""# (1) 每個唯一列出現次數的分布
+dup_profile = df.value_counts().value_counts().sort_index()
+dup_profile = dup_profile.rename_axis("出現次數").reset_index(name="有幾種唯一列")
+display(dup_profile)
+print("驗證:", " + ".join(f"{r['有幾種唯一列']}x{r['出現次數']}" for _, r in dup_profile.iterrows()),
+      "=", int((dup_profile["出現次數"]*dup_profile["有幾種唯一列"]).sum()), "= 原始列數")
+
+# (2) 以第 1 列為例,找出與它「七欄完全相同」的所有列
+row0 = df.iloc[0]
+same = df.index[(df == row0).all(axis=1)].tolist()
+print("\\n與第 1 列完全相同的列 (1-based):", [i+1 for i in same])
+display(df.loc[same])
+print("結論:連 charges 都精準到小數第 5 位相同 -> 屬於『完全重複(exact duplicate)』,"
+      "切分前去除可避免訓練/測試資料外洩。")""")
+
 md("**圖 1：目標變數分布（原始 vs 取對數）** —— 確認右偏特性。")
 code("""fig, ax = plt.subplots(1, 2, figsize=(12, 4))
 sns.histplot(df["charges"], bins=40, kde=True, color="#4C72B0", ax=ax[0]); ax[0].set_title("charges (raw)")
