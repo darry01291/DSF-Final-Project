@@ -55,15 +55,30 @@ md("""## 階段 1 — 問題定義與探索式資料分析（EDA）
 **任務類型判斷：** 目標變數 `charges` 為連續值 → 屬於**監督式迴歸**（非分類、非分群）。
 """)
 
-md("先載入資料，檢視大小、欄位型態、缺失值與重複列。")
-code("""df = pd.read_excel("medical_insurance.xlsx")
+md("""先載入資料,檢視大小、欄位型態、缺失值與重複列。
+
+> **可攜性說明:** 資料同時**內嵌於本 Notebook**(壓縮編碼)。下方會先嘗試讀取同資料夾的
+> `medical_insurance.xlsx`;若找不到(例如在 Google Colab 直接上傳 Notebook),會自動改用
+> 內嵌資料 —— 因此**不需手動上傳資料檔即可一鍵全部執行**,且資料內容完全相同。
+""")
+code('''# 內嵌資料(gzip + base64 編碼的原始 CSV);找不到 xlsx 時自動使用,確保到處可重現
+import io, gzip, base64
+_EMBEDDED_DATA_B64 = "''' + open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "embedded_data_b64.txt")).read().strip() + '''"
+
+try:
+    df = pd.read_excel("medical_insurance.xlsx")          # 優先讀取本機資料檔
+    print("資料來源:本機 medical_insurance.xlsx")
+except FileNotFoundError:
+    df = pd.read_csv(io.BytesIO(gzip.decompress(base64.b64decode(_EMBEDDED_DATA_B64))))
+    print("資料來源:Notebook 內嵌資料(找不到 xlsx,自動切換)")
+
 print("資料維度 Shape:", df.shape)
 display(df.head())
 print("\\n欄位型態 Dtypes:\\n", df.dtypes)
 print("\\n缺失值 Missing:\\n", df.isna().sum())
 print("\\n完全重複的列數:", df.duplicated().sum(),
       "｜ 去重後唯一列數:", len(df.drop_duplicates()))
-df.describe().round(2)""")
+df.describe().round(2)''')
 
 md("""**EDA 觀察重點**
 - **無缺失值**；共 6 個特徵 + 1 個目標變數。
